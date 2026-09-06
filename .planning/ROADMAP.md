@@ -47,6 +47,25 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 
 - [ ] **Phase 10.7: Guest sign-in and their own orders** - A guest signs in with Google from the QR menu or the storefront, without leaving the page, and gets two things: their name and phone already filled in at checkout, and a list of their own past and current orders. "Continue without an account" stays available everywhere. Carries the trust-boundary fix the sign-in exposes — an operator becomes someone who holds a membership, not someone without a phone number — and pulls the order↔customer link forward out of Phase 12 _(added 2026-09-06 — founder chose "faster checkout + order history"; research in `.planning/notes/guest-sign-in-research.md`)_
 
+Plans:
+
+**Wave 1** _(the trust boundary and the server wiring — file-disjoint, run in parallel)_
+
+- [ ] 10.7-01-PLAN.md — the principal rule: on a guest host an operator holds a membership there, off one signed in still means operator (the branch onboarding depends on); plus `@OptionalAuth()` so a public route may learn who you are without requiring it
+- [ ] 10.7-02-PLAN.md — register the `one-tap` plugin gated on the Google credentials, trust `https://*.<apex>`, and close the dev/production asymmetry on `/api/*` that would make sign-in work on a server and 404 on the Mac
+
+**Wave 2**
+
+- [ ] 10.7-03-PLAN.md — `orders.customer_user_id`, written from the session and never from the body, threaded through **both** repository write paths, with the read scoped to one guest inside one tenant
+
+**Wave 3** _(founder in the loop — Google Cloud Console origins and a public client id)_
+
+- [ ] 10.7-04-PLAN.md — an auth client for `apps/qr-menu`, One Tap in the account drawer, checkout prefill, and "continue without an account" at equal weight
+
+**Wave 4**
+
+- [ ] 10.7-05-PLAN.md — the "my orders" screen, its empty state explaining that orders are remembered from sign-in onward, and the regenerated contract artifacts
+
 - [ ] **Phase 17: Operator Self-service Polish (post-MVP-1)** - Full `/dashboard/team` page (member list, pending invitations, revoke, role-change), AUTH-07 full 2FA UX (lost-device admin reset for subordinates, recovery-code regeneration), closes BLOCKED row in `audit-gap.md` via `auth.api.updateMemberRole` + `identity.role_changed.v1` envelope. Activation trigger: first paying tenant adds a 2nd member with role ≠ owner, OR Better Auth ≥ 1.5 ships `databaseHooks.member.update.after` _(scope split via Phase 3 persona review 2026-05-29 — CTO HIGH-1 + Skeptic HIGH-4)_
 
 ## MVP-1 Phase Details
