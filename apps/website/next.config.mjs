@@ -15,11 +15,13 @@ const nextConfig = {
     root: resolve(__dirname, '../..'),
   },
   async rewrites() {
-    // Caddy owns /v1/* in production; a prod rewrite would hairpin instead
-    // of surfacing a missing Caddy route as a 404.
+    // Caddy owns /v1/* and /api/* in production; a prod rewrite would hairpin instead
+    // of surfacing a missing Caddy route as a 404. /api/* carries Better Auth, and guest sign-in
+    // is same-origin on a tenant host — without this it works on a server and 404s locally.
     if (process.env.NODE_ENV === 'production') return [];
     return [
       { source: '/v1/:path*', destination: `${process.env.NEXT_PUBLIC_API_ORIGIN}/v1/:path*` },
+      { source: '/api/:path*', destination: `${process.env.NEXT_PUBLIC_API_ORIGIN}/api/:path*` },
     ];
   },
 };

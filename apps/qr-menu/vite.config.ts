@@ -65,6 +65,9 @@ export default defineConfig({
     // mirroring same-origin production.
     proxy: {
       '/v1': { target: API_TARGET, changeOrigin: false },
+      // changeOrigin stays false: the api resolves the tenant from the host, and rewriting it
+      // would make every proxied guest request tenant-less.
+      '/api': { target: API_TARGET, changeOrigin: false },
       '/internal': { target: API_TARGET, changeOrigin: false },
       // Dev only: object storage speaks plain http on localhost, which a phone can neither
       // reach nor load into an https page. Same-origin through here, it can do both — point

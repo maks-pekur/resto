@@ -224,14 +224,15 @@ export const buildAuthFromEnv = (
   locationResolver: InitialLocationDrizzleRepository,
 ): Auth => {
   const cookieDomain = env.AUTH_COOKIE_DOMAIN;
-  // Admin hits BA from a different origin than the api's `baseURL`, and BA
-  // enforces an Origin allowlist on mutating requests. Since 07.4 the admin is
-  // one origin — a path on the apex — so there is no per-tenant host to allow
-  // and no wildcard to match. trustedOrigins stays a plain array, never a
-  // function, so D-39 is not reintroducing a matcher BA already provides.
+  // BA enforces an Origin allowlist on mutating requests. The admin is one origin — a path on the
+  // apex since 07.4 — but 10.7 adds guest sign-in on every tenant host, so a wildcard is needed
+  // after all. BA matches a pattern containing `*` through wildcardMatch, one label deep, so
+  // `https://*.<apex>` admits `pizza.<apex>` and not `a.b.<apex>`. Still a plain array, never a
+  // function: D-39 stands.
   const trustedOrigins: string[] = [];
   const trustedAdminOrigin = adminOrigin(env);
   if (trustedAdminOrigin) trustedOrigins.push(trustedAdminOrigin);
+  if (env.PUBLIC_APEX_DOMAIN) trustedOrigins.push(`https://*.${env.PUBLIC_APEX_DOMAIN}`);
 
   const { sendInvitationEmail, sendResetPassword, sendVerificationEmail } = buildBaCallbacks(
     env,

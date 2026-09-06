@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where } from 'better-auth';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import type { OrganizationOptions } from 'better-auth/plugins';
-import { bearer, organization, twoFactor } from 'better-auth/plugins';
+import { bearer, oneTap, organization, twoFactor } from 'better-auth/plugins';
 import { eq, and, gt } from 'drizzle-orm';
 import { TenantId } from '@resto/domain';
 import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
@@ -310,6 +310,10 @@ export const buildAuth = (opts: BuildOpts) =>
       organizationSwitch(),
       twoFactor(),
       bearer(),
+      // 10.7 D-01/D-02: gated on the same credentials as the provider above, and given no clientId
+      // of its own so the ID token's audience can only ever be socialProviders.google.clientId.
+      // One credential, one place to change it.
+      ...(opts.google ? [oneTap()] : []),
     ],
     user: {
       additionalFields: {
