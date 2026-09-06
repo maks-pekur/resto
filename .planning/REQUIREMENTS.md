@@ -577,7 +577,7 @@
 | ING-08      | Phase 10.6    | Pending                 |
 | ING-09      | Phase 10.6    | Pending                 |
 | ING-10      | Phase 10.6    | Pending                 |
-| ING-11      | Phase 10.6    | Pending                 |
+| ING-11      | Phase 10.6    | Complete                |
 | ING-12      | Phase 10.6    | Pending                 |
 | ING-13      | Phase 10.6    | Pending                 |
 | ING-14      | Phase 10.6    | Pending                 |
